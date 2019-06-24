@@ -15,9 +15,15 @@ public class KoriKarhuFrame extends JFrame {
     private String infoText1;
     private String infoText2;
     private Timer timer;
+    private long lastBasket;
+
+    private boolean isGameActive;
+
 
     public KoriKarhuFrame() {
-        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        //this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        this.setSize(1280,1024);
+
         this.setUndecorated(true);
         this.setBackground(Color.WHITE);
         Container cont = this.getContentPane();
@@ -30,9 +36,9 @@ public class KoriKarhuFrame extends JFrame {
         mainPane.add(new JLabel(getTitleImage()),"alignx center");
 
         JPanel scorePanel = new JPanel(new MigLayout("al center"));
-        scorePanel.add(new JLabel(new ImageIcon("bb_white.png")));
+        scorePanel.add(new JLabel(getScaledImageIcon("bb_white.png",200,200)));
         scoreLabel = new JLabel("0");
-        scoreLabel.setFont(new Font(Font.SANS_SERIF,Font.BOLD,400));
+        scoreLabel.setFont(new Font(Font.SANS_SERIF,Font.BOLD,300));
         scoreLabel.setForeground(Color.WHITE);
         scorePanel.add(Box.createHorizontalStrut(70));
         scorePanel.add(scoreLabel);
@@ -40,9 +46,9 @@ public class KoriKarhuFrame extends JFrame {
         mainPane.add(scorePanel,"pos 0px 450px 50% 80%");
 
         JPanel timePanel = new JPanel(new MigLayout("al center"));
-        timePanel.add(new JLabel(new ImageIcon("time_white.png")));
+        timePanel.add(new JLabel(getScaledImageIcon("time_white.png",174,200)));
         timeLabel = new JLabel("60");
-        timeLabel.setFont(new Font(Font.SANS_SERIF,Font.BOLD,400));
+        timeLabel.setFont(new Font(Font.SANS_SERIF,Font.BOLD,300));
         timeLabel.setForeground(Color.WHITE);
         timePanel.add(Box.createHorizontalStrut(70));
         timePanel.add(timeLabel);
@@ -57,12 +63,26 @@ public class KoriKarhuFrame extends JFrame {
         infoLabel = new JLabel("UUSI PELI -> PAINA START!");
         infoLabel.setFont(new Font(Font.SANS_SERIF,Font.BOLD+Font.ITALIC,80));
         infoLabel.setForeground(Color.BLACK);
-        infoPanel.add(infoLabel,"alignx center wrap");
-        cont.add(infoPanel,BorderLayout.SOUTH);
 
+        infoPanel.add(infoLabel,"alignx center wrap");
+        infoPanel.setBackground(Color.WHITE);
+        cont.add(infoPanel,BorderLayout.SOUTH);
         this.setVisible(true);
+
+        new Timer(50, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refresh();
+            }
+        }).start();
     }
 
+    private ImageIcon getScaledImageIcon(String name, int w, int h) {
+        ImageIcon imageIcon = new ImageIcon(name); // load the image to a imageIcon
+        Image image = imageIcon.getImage(); // transform it
+        Image newimg = image.getScaledInstance(w, h,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
+        return new ImageIcon(newimg);  // transform it back
+    }
 
     private ImageIcon getTitleImage() {
         ImageIcon imageIcon = new ImageIcon("kktitle.png"); // load the image to a imageIcon
@@ -72,10 +92,22 @@ public class KoriKarhuFrame extends JFrame {
     }
 
     public void reset() {
-        infoLabel.setVisible(false);
+        infoLabel.setVisible(true);
         time = 60;
         score = 0;
+        isGameActive = false;
+        infoText1="UUSI PELI -> PAINA START!";
+        infoText2="AIKA LOPPUI!";
+        lastBasket =0;
+        refresh();
+    }
+
+    public void startGame() {
+        reset();
+        infoText1="";
+        infoText2="";
         startCount();
+        isGameActive = true;
     }
 
     public void startCount() {
@@ -97,11 +129,34 @@ public class KoriKarhuFrame extends JFrame {
     }
 
     public void endGame() {
+        infoText1="UUSI PELI -> PAINA START!";
+        infoText2="AIKA LOPPUI!";
+        isGameActive = false;
+        timer.stop();
+    }
 
+    public void startPressed() {
+        if (!isGameActive) startGame();
+    }
+
+    public void basketSignal() {
+
+        if (!isGameActive) return;
+
+        // Not possible to score more often than every 2 secs
+        System.out.println(System.currentTimeMillis() - lastBasket);
+        if (System.currentTimeMillis() - lastBasket > 2000) {
+            score ++;
+            lastBasket=System.currentTimeMillis();
+        }
     }
 
     public void refresh() {
         scoreLabel.setText(score+"");
         timeLabel.setText(time+"");
+        if (((int)(System.currentTimeMillis()/1000)) % 2 == 0)
+            infoLabel.setText(infoText1);
+        else
+            infoLabel.setText(infoText2);
     }
 }
